@@ -1,0 +1,18 @@
+{
+  "vague_prompt": "Crie uma função de login",
+  "target": "codex",
+  "language": "pt-BR",
+  "context": [
+    "Aplicação web existente com endpoint POST /login",
+    "O contrato HTTP público já é consumido pelo frontend"
+  ],
+  "references": [
+    "https://owasp.org/www-project-application-security-verification-standard/"
+  ],
+  "constraints": [
+    "Não alterar o contrato HTTP existente",
+    "Não registrar senhas, tokens ou segredos"
+  ],
+  "audience": "Equipe de backend",
+  "output_preference": "Patch pronto para revisão, com testes automatizados"
+}

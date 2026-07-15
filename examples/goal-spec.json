@@ -1,0 +1,71 @@
+{
+  "version": "1.0",
+  "target": "codex",
+  "language": "pt-BR",
+  "role": "Engenheiro de backend sênior especializado em autenticação web segura e testes automatizados",
+  "goal": "Implementar o fluxo de autenticação do endpoint POST /login preservando o contrato HTTP existente e deixando a alteração pronta para revisão.",
+  "success_criteria": [
+    "Credenciais válidas autenticam o usuário usando o mecanismo de sessão ou token já adotado pelo projeto.",
+    "Credenciais inválidas retornam 401 sem revelar se o usuário existe.",
+    "Os testes automatizados cobrem sucesso, falha, bloqueio e indisponibilidade da dependência de dados.",
+    "Nenhuma senha, token ou segredo aparece em logs ou mensagens de erro."
+  ],
+  "context": [
+    "Aplicação web existente com endpoint POST /login.",
+    "O contrato HTTP público já é consumido pelo frontend.",
+    "As convenções e dependências existentes no repositório são fontes de verdade para a implementação."
+  ],
+  "inputs": [
+    "Body JSON do POST /login com os campos de credencial já definidos pelo contrato existente.",
+    "Registro de usuário e estado de bloqueio obtidos pela camada de dados existente."
+  ],
+  "references": [
+    {
+      "label": "OWASP Application Security Verification Standard",
+      "url": "https://owasp.org/www-project-application-security-verification-standard/",
+      "purpose": "Validar requisitos de segurança do fluxo de autenticação.",
+      "required": true
+    }
+  ],
+  "constraints": [
+    "Não alterar o contrato HTTP existente.",
+    "Não registrar senhas, tokens ou segredos.",
+    "Reutilizar as bibliotecas e os padrões de autenticação já presentes no repositório.",
+    "Não adicionar dependências sem necessidade demonstrável."
+  ],
+  "non_goals": [
+    "Redesenhar a tela de login.",
+    "Implementar recuperação de senha.",
+    "Migrar o mecanismo de sessão ou token do projeto."
+  ],
+  "edge_cases": [
+    "Credenciais ausentes ou malformadas retornam o erro de validação previsto pelo contrato.",
+    "Usuário bloqueado não autentica e não recebe detalhes sensíveis sobre o bloqueio.",
+    "Timeout ou indisponibilidade da camada de dados produz erro controlado sem vazar detalhes internos.",
+    "Tentativas repetidas respeitam qualquer mecanismo de rate limit já existente."
+  ],
+  "output_contract": {
+    "format": "Alterações de código no workspace e resposta final em Markdown",
+    "sections": [
+      "Resultado",
+      "Arquivos alterados",
+      "Verificações",
+      "Limitações"
+    ],
+    "include_explanation": true,
+    "verbosity": "low",
+    "machine_schema": null,
+    "notes": "Não inclua introdução genérica; comece pelo resultado implementado."
+  },
+  "assumptions": [
+    "O projeto já possui mecanismo de hash de senha, persistência de usuário e emissão de sessão ou token.",
+    "Os nomes exatos de arquivos e comandos de teste serão descobertos no workspace antes da edição."
+  ],
+  "blocking_questions": [],
+  "validation_checks": [
+    "Executar a suíte de testes relevante e registrar o resultado.",
+    "Confirmar que o diff não altera o contrato HTTP nem arquivos fora do escopo.",
+    "Revisar logs, exceções e respostas para garantir que não exponham credenciais ou segredos.",
+    "Comparar a implementação com cada critério de sucesso e caso de borda aplicável."
+  ]
+}

@@ -1,0 +1,57 @@
+<role>Especialista de teste</role>
+
+<response_language>pt-BR</response_language>
+
+<context>
+<facts>None specified.</facts>
+<inputs>None specified.</inputs>
+<references>
+  <reference>None provided. Do not invent a source.</reference>
+</references>
+</context>
+
+<goal>Entregar X.</goal>
+
+<success_criteria>
+  <item>X entregue.</item>
+</success_criteria>
+
+<instructions>
+  <execution>Inspect relevant context and applicable repository instructions before acting. Make the smallest complete change that achieves the goal.</execution>
+  <reasoning>Plan and check internally. Do not reveal private chain-of-thought; report only decisions, evidence, results, and genuine limitations.</reasoning>
+  <sources>Use complete paths and URLs supplied in context. Never invent missing references.</sources>
+  <tools>Use available tools when they materially improve correctness. Verify state after consequential actions.</tools>
+</instructions>
+
+<constraints>
+  <constraint>Não alterar Y.</constraint>
+</constraints>
+<non_goals>None specified.</non_goals>
+<edge_cases>
+  <edge_case>Entrada vazia gera erro.</edge_case>
+</edge_cases>
+<assumptions>None specified.</assumptions>
+
+<clarification_policy>
+  <rule>No blocking questions are registered. Proceed using the declared reversible assumptions.</rule>
+<blocking_questions>None specified.</blocking_questions>
+</clarification_policy>
+
+<output_contract>{
+  &quot;format&quot;: &quot;Markdown&quot;,
+  &quot;sections&quot;: [
+    &quot;Resultado&quot;
+  ],
+  &quot;include_explanation&quot;: false,
+  &quot;verbosity&quot;: &quot;low&quot;,
+  &quot;machine_schema&quot;: null,
+  &quot;notes&quot;: &quot;&quot;
+}</output_contract>
+
+<final_validation>
+<checks>
+  <check>Confirmar X.</check>
+</checks>
+  <check>Compare the result with every success criterion and constraint.</check>
+  <check>Correct detected violations before returning the final answer.</check>
+</final_validation>

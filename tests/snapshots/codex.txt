@@ -1,0 +1,64 @@
+# Objetivo
+
+Entregar X.
+
+## Papel
+
+Especialista de teste
+
+## Contexto do workspace
+
+- Nenhum item aplicável.
+
+## Inputs
+
+- Nenhum item aplicável.
+
+## Fontes de verdade
+
+- Nenhuma URL fornecida. Não invente fontes; sinalize se uma for necessária.
+
+## Critérios de sucesso
+
+- X entregue.
+
+## Restrições
+
+- Não alterar Y.
+- Inspecione primeiro o workspace e as instruções aplicáveis. Preserve mudanças existentes e não relacionadas.
+- Use os caminhos e URLs completos fornecidos; não invente referências ausentes.
+- Faça mudanças delimitadas e verificáveis. Evite refatorações ou dependências fora do objetivo.
+
+## Fora de escopo
+
+- Nenhum item aplicável.
+
+## Casos de borda
+
+- Entrada vazia gera erro.
+
+## Hipóteses declaradas
+
+- Nenhum item aplicável.
+
+## Política de esclarecimento
+
+- Não há perguntas bloqueantes registradas. Faça hipóteses reversíveis já declaradas e avance.
+
+## Entregável
+
+- Idioma obrigatório da resposta: pt-BR
+- Formato: Markdown
+- Verbosidade: low
+- Explicações: omitir
+- Seções: Resultado
+
+## Validação final
+
+Planeje internamente, execute e corrija silenciosamente violações encontradas. Não exponha chain-of-thought. Antes de concluir:
+
+- Confirmar X.
+- Compare o resultado com todos os critérios de sucesso e restrições.
+- Execute verificações proporcionais ao risco e informe comandos/resultados relevantes.
+
+No handoff ao usuário, comece pelo resultado. Para Codex, mantenha o relato conciso e inclua somente arquivos/artefatos alterados, verificações executadas e limitações reais.

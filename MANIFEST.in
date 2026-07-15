@@ -1,0 +1,2 @@
+recursive-include src/goal_metaprompter/assets *.json *.md
+recursive-include tests/snapshots *.txt

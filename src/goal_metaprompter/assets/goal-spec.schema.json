@@ -1,0 +1,110 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:goal-metaprompter:goal-spec:1.0",
+  "title": "GoalSpec",
+  "description": "Contrato intermediario entre o metaprompter e o renderer deterministico.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "target",
+    "language",
+    "role",
+    "goal",
+    "success_criteria",
+    "context",
+    "inputs",
+    "references",
+    "constraints",
+    "non_goals",
+    "edge_cases",
+    "output_contract",
+    "assumptions",
+    "blocking_questions",
+    "validation_checks"
+  ],
+  "properties": {
+    "version": { "const": "1.0" },
+    "target": {
+      "type": "string",
+      "enum": ["claude-code", "codex", "cursor", "gemini"]
+    },
+    "language": { "type": "string", "minLength": 2 },
+    "role": { "type": "string", "minLength": 1 },
+    "goal": { "type": "string", "minLength": 1 },
+    "success_criteria": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "context": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "inputs": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "references": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["label", "url", "purpose"],
+        "properties": {
+          "label": { "type": "string", "minLength": 1 },
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "pattern": "^https?://[^\\s]+$"
+          },
+          "purpose": { "type": "string", "minLength": 1 },
+          "required": { "type": "boolean", "default": true }
+        }
+      }
+    },
+    "constraints": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "non_goals": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "edge_cases": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "output_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["format", "sections", "include_explanation", "verbosity"],
+      "properties": {
+        "format": { "type": "string", "minLength": 1 },
+        "sections": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "include_explanation": { "type": "boolean" },
+        "verbosity": { "type": "string", "enum": ["low", "medium", "high"] },
+        "machine_schema": { "type": ["object", "null"] },
+        "notes": { "type": "string" }
+      }
+    },
+    "assumptions": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "blocking_questions": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "validation_checks": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    }
+  }
+}
