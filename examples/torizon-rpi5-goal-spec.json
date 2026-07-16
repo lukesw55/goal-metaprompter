@@ -1,0 +1,183 @@
+{
+  "version": "1.0",
+  "target": "codex",
+  "language": "pt-BR",
+  "role": "Engenheiro sênior de sistemas embarcados especializado em Yocto/OpenEmbedded, Common Torizon OS, BSP do Raspberry Pi, OSTree/composefs, Uptane e cadeias de secure boot",
+  "goal": "Portar o Common Torizon OS 7, baseado em Yocto Scarthgap, para o Raspberry Pi 5 e entregar no workspace uma camada de integração reproduzível que gere uma imagem inicializável, preserve OTA/rollback do Torizon e ofereça configurações próprias e auditáveis de chaves criptográficas para o secure boot BCM2712 e para a proteção composefs/OSTree.",
+  "success_criteria": [
+    "Uma imagem `torizon-minimal` para `MACHINE = \"raspberrypi5\"` e `DISTRO = \"common-torizon\"` é construída a partir de revisões fixadas e inicializa no Raspberry Pi 5 usando a mídia definida pelo projeto.",
+    "O port fica isolado em uma camada própria e em configuração kas/repo reproduzível, sem modificar `meta-raspberrypi`, `meta-toradex-torizon`, OE-Core ou outras camadas upstream no lugar.",
+    "O primeiro boot oferece console serial em `ttyAMA10`, systemd, rede, OSTree e os serviços essenciais do Torizon sem erros críticos; uma variante `torizon-docker` é validada depois do bring-up mínimo.",
+    "A integração mantém um `config.txt` não vazio, usa os artefatos BCM2712 corretos, inclui DTBs/overlays, kernel e initramfs exigidos e documenta a escolha entre boot direto e U-Boot com base nos requisitos de OSTree, OTA e rollback.",
+    "A proteção de rootfs usa `cfs-signed` com chaves Ed25519 próprias; a configuração de produção define `CFS_GENERATE_KEYS = \"0\"`, `CFS_SIGN_KEYDIR` e `CFS_SIGN_KEYNAME`, e falha de forma explícita se os arquivos `.sec` e `.pub` esperados não estiverem disponíveis.",
+    "A integração não herda cegamente `torizon-signed`, pois essa classe inclui `tdx-signed` do BSP de segurança para SoMs Toradex; em seu lugar, compõe `cfs-signed` com uma implementação específica para a cadeia de boot do Raspberry Pi 5.",
+    "O secure boot do BCM2712 produz e verifica `boot.img` e `boot.sig` com RSA-2048/SHA-256 no formato aceito pelas ferramentas oficiais Raspberry Pi, e contempla a contrassinatura do segundo estágio exigida no Raspberry Pi 5.",
+    "O fluxo de assinatura suporta exatamente um backend por build: chave PEM externa em modo de desenvolvimento ou wrapper HSM compatível com `rpi-eeprom-digest -H` em modo de produção; a chave privada nunca entra na imagem, no sstate, nos logs ou no repositório.",
+    "As chaves de boot RSA, composefs/OSTree Ed25519 e credenciais/raízes Uptane são inventariadas, armazenadas e rotacionadas como domínios separados; o projeto rejeita reutilização da mesma chave entre finalidades.",
+    "A programação de OTP, `program_pubkey`, contrassinatura de firmware e qualquer bloqueio irreversível ficam em uma etapa de provisionamento separada, com dry-run, validações prévias e confirmação humana explícita; nenhuma tarefa padrão de build ou flash grava OTP.",
+    "Testes positivos e negativos demonstram: boot válido, rejeição de `boot.img` alterado, rejeição de assinatura composefs/OSTree inválida, atualização A→B, reboot, rollback controlado e recuperação após interrupção de energia nos pontos suportados.",
+    "A entrega documenta lacunas, suporte experimental, diferenças entre Raspberry Pi 5 Model B e Compute Module 5 e fornece evidências dos comandos executados, artefatos gerados e resultados observados em hardware real ou, quando hardware não estiver disponível, uma matriz clara de testes pendentes."
+  ],
+  "context": [
+    "Pesquisa verificada em 2026-07-15: o repositório oficial `torizon/meta-toradex-torizon` descreve Common Torizon como a variante construída sobre BSPs de terceiros e não lista Raspberry Pi 5 entre as máquinas já integradas.",
+    "A linha Torizon OS 7 usa Yocto/OpenEmbedded Scarthgap; a branch de integração é `scarthgap-7.x.y`, enquanto `meta-raspberrypi` fornece `MACHINE = \"raspberrypi5\"` na branch `scarthgap`.",
+    "A configuração `raspberrypi5.conf` do BSP usa Cortex-A76/armv8.2-a, `kernel_2712.img`, DTBs BCM2712, `ttyAMA10` e recomenda o mixin de U-Boot para Scarthgap.",
+    "O Raspberry Pi 5 carrega o firmware a partir da EEPROM e exige um `config.txt` não vazio; ele não usa os arquivos `start*.elf` usados em gerações anteriores.",
+    "No secure boot oficial do BCM2712, a BootROM valida o segundo estágio e exige contrassinatura do cliente; depois, o firmware valida `boot.img` por `boot.sig` usando a chave RSA-2048 do cliente cujo digest é provisionado em OTP.",
+    "Depois que o digest da chave pública é gravado em OTP, o secure boot não pode ser desativado e outra chave raiz não pode ser programada; por isso, provisionamento irreversível não faz parte da automação padrão.",
+    "A classe `cfs-signed.bbclass` habilita composefs e assinatura de commits OSTree com Ed25519. Os padrões de desenvolvimento são `CFS_GENERATE_KEYS = \"1\"`, `CFS_SIGN_KEYDIR = \"${TOPDIR}/keys/ostree\"` e `CFS_SIGN_KEYNAME = \"cfs-dev\"`, mas produção deve fornecer chaves externas e desabilitar geração automática.",
+    "A classe `torizon-signed.bbclass` herda `tdx-signed` e `cfs-signed`; somente a segunda parte é diretamente reutilizável no port para Raspberry Pi.",
+    "Quando composefs está ativo, mudanças em `/etc` usam overlay e podem não persistir após reboot; o port precisa decidir e testar como persistir configuração de produto sem enfraquecer a proteção de rootfs.",
+    "A integração OTA precisa preservar OSTree e Aktualizr/Uptane. A segurança do boot, a autenticidade do rootfs e a identidade/provisão Torizon Cloud são camadas distintas da cadeia de confiança."
+  ],
+  "inputs": [
+    "Workspace do port, cujas convenções, alterações existentes e `AGENTS.md` devem ser inspecionados antes de editar.",
+    "Raspberry Pi 5 Model B como alvo padrão, com Raspberry Pi Compute Module 5 tratado como variante explícita devido às diferenças de provisionamento e mídia.",
+    "Mídia padrão de bring-up: cartão microSD; NVMe/eMMC deve ser parametrizável e validado separadamente.",
+    "Camadas Yocto/OpenEmbedded compatíveis e fixadas: OE-Core/Poky Scarthgap, `meta-raspberrypi` Scarthgap, `meta-toradex-torizon` `scarthgap-7.x.y`, `meta-updater`, `meta-virtualization`, subcamadas necessárias de `meta-openembedded` e o mixin de U-Boot recomendado pelo BSP.",
+    "Chave pública e backend de assinatura RSA-2048 fornecidos fora do repositório; par Ed25519 composefs/OSTree fornecido em diretório seguro fora do workspace; credenciais Torizon Cloud opcionais e separadas.",
+    "Raspberry Pi 5 de laboratório não provisionado para os testes reversíveis e um dispositivo sacrificial dedicado para qualquer teste posterior com OTP."
+  ],
+  "references": [
+    {
+      "label": "Common Torizon OS — repositório oficial",
+      "url": "https://github.com/torizon/meta-toradex-torizon/tree/scarthgap-7.x.y",
+      "purpose": "Definir o fluxo genérico de port para BSPs de terceiros, a distro `common-torizon` e as imagens suportadas.",
+      "required": true
+    },
+    {
+      "label": "Common Torizon — classe cfs-signed",
+      "url": "https://github.com/torizon/meta-toradex-torizon/blob/scarthgap-7.x.y/classes/cfs-signed.bbclass",
+      "purpose": "Usar as variáveis e o comportamento oficiais de assinatura composefs/OSTree.",
+      "required": true
+    },
+    {
+      "label": "Common Torizon — classe torizon-signed",
+      "url": "https://github.com/torizon/meta-toradex-torizon/blob/scarthgap-7.x.y/classes/torizon-signed.bbclass",
+      "purpose": "Comprovar a dependência de `tdx-signed` e evitar aplicar uma cadeia Toradex SoM ao BCM2712.",
+      "required": true
+    },
+    {
+      "label": "Toradex — integração de Secure Boot no Torizon OS",
+      "url": "https://developer.toradex.com/torizon/security/how-to-integrate-secure-boot/",
+      "purpose": "Orientar a proteção de rootfs, cobertura da cadeia de confiança e configuração CFS no Torizon OS 7.",
+      "required": true
+    },
+    {
+      "label": "Toradex — build do Torizon OS com Yocto/OpenEmbedded",
+      "url": "https://developer.toradex.com/torizon/in-depth/build-torizoncore-from-source-with-yocto-projectopenembedded/",
+      "purpose": "Confirmar a série Scarthgap, imagens, requisitos de build, versionamento e preservação de OSTree/Aktualizr.",
+      "required": true
+    },
+    {
+      "label": "Toradex — proteção do root filesystem",
+      "url": "https://developer.toradex.com/torizon/security/rootfs-protection-on-torizon/",
+      "purpose": "Validar efeitos de composefs, fs-verity, overlay e persistência de `/etc`.",
+      "required": true
+    },
+    {
+      "label": "meta-raspberrypi — máquina Raspberry Pi 5 Scarthgap",
+      "url": "https://github.com/agherzan/meta-raspberrypi/blob/scarthgap/conf/machine/raspberrypi5.conf",
+      "purpose": "Usar a configuração oficial do BSP Yocto para arquitetura, DTBs, kernel, console e U-Boot.",
+      "required": true
+    },
+    {
+      "label": "meta-raspberrypi — configuração base de imagem",
+      "url": "https://github.com/agherzan/meta-raspberrypi/blob/scarthgap/conf/machine/include/rpi-base.inc",
+      "purpose": "Preservar arquivos de boot, WIC, dependências e composição da partição FAT do BSP.",
+      "required": true
+    },
+    {
+      "label": "Raspberry Pi — configuração e conteúdo de boot",
+      "url": "https://www.raspberrypi.com/documentation/computers/configuration.html",
+      "purpose": "Validar EEPROM, `config.txt`, kernel BCM2712, DTBs, boot modes e propriedades `/chosen/bootloader`.",
+      "required": true
+    },
+    {
+      "label": "Raspberry Pi usbboot — secure boot",
+      "url": "https://github.com/raspberrypi/usbboot/blob/master/docs/secure-boot.md",
+      "purpose": "Implementar corretamente `boot.img`, `boot.sig`, RSA-2048, verificação offline, HSM e cadeia de confiança BCM2712.",
+      "required": true
+    },
+    {
+      "label": "Raspberry Pi usbboot — recovery seguro do Pi 5",
+      "url": "https://github.com/raspberrypi/usbboot/blob/master/secure-boot-recovery5/README.md",
+      "purpose": "Tratar contrassinatura do segundo estágio e programação segura específica do BCM2712.",
+      "required": true
+    }
+  ],
+  "constraints": [
+    "Tratar o resultado como port experimental; não declarar suporte oficial da Raspberry Pi ou da Toradex.",
+    "Começar por `torizon-minimal` sem OTP e só então habilitar Docker, assinatura de rootfs e secure boot em marcos separados e reversíveis.",
+    "Fixar commits ou tags de todas as camadas e registrar `bitbake-layers show-layers`, `bitbake -e` das variáveis críticas e o hash dos artefatos finais.",
+    "Não modificar camadas upstream no lugar; todas as adaptações pertencem a uma camada própria, scripts versionados e configuração kas/repo do port.",
+    "Não assumir que `torizon-signed` funciona no Raspberry Pi; reutilizar apenas componentes comprovadamente agnósticos ao SoC e implementar a parte BCM2712 com ferramentas oficiais Raspberry Pi.",
+    "Não armazenar chaves privadas, seeds, PINs, tokens, `credential.zip`, caminhos pessoais ou material HSM no Git, na imagem, nos logs, no sstate compartilhado ou em artefatos públicos de CI.",
+    "Não gerar chaves de produção durante o build; geração automática só pode existir em perfil de desenvolvimento claramente marcado e com material descartável.",
+    "Não reutilizar a chave RSA do boot como chave Ed25519 de composefs, chave Uptane, certificado TLS ou identidade do dispositivo.",
+    "Não imprimir comandos irreversíveis como se fossem passos rotineiros: agrupá-los em um runbook separado com avisos, pré-condições, leitura de estado, backup, dry-run e confirmação explícita.",
+    "Não programar OTP, bloquear JTAG, ativar write protection permanente nem executar provisionamento em hardware sem autorização expressa do usuário.",
+    "Preservar modificações preexistentes e não relacionadas no workspace.",
+    "Usar somente documentação oficial e código upstream como fonte para fatos de hardware, formatos criptográficos e variáveis BitBake; marcar inferências e lacunas como tais."
+  ],
+  "non_goals": [
+    "Obter certificação de segurança ou declarar o port pronto para produção apenas por concluir o build.",
+    "Alterar o serviço Torizon Cloud, criar uma implementação própria de Uptane ou substituir OSTree/Aktualizr.",
+    "Adaptar todos os periféricos e HATs possíveis antes de validar boot, rede, armazenamento e atualização.",
+    "Fazer fork permanente das camadas upstream quando uma camada de integração ou `.bbappend` for suficiente.",
+    "Provisionar OTP em um Raspberry Pi de uso geral durante o desenvolvimento.",
+    "Incluir chaves reais ou credenciais reais como exemplos."
+  ],
+  "edge_cases": [
+    "A branch Scarthgap do BSP e as revisões do Torizon podem ter dependências incompatíveis; o build deve detectar e documentar conflitos de `LAYERSERIES_COMPAT`, providers, U-Boot e kernel em vez de mascará-los.",
+    "O fluxo direto do firmware Raspberry Pi pode inicializar o kernel, mas não oferecer os contratos de boot/rollback esperados pelo OSTree; a decisão por U-Boot deve ser testada, não presumida.",
+    "O `boot.img` pode exceder limites de RAM ou omitir `config.txt`, DTB, overlays, initramfs ou o artefato de boot efetivamente usado; uma inspeção automatizada do conteúdo deve falhar cedo.",
+    "Raspberry Pi 5 Model B, CM5 com eMMC e CM5 com NVMe têm caminhos de recuperação, mídia e write-protect distintos; o runbook deve identificar a placa antes de qualquer provisionamento.",
+    "Uma fonte de alimentação insuficiente pode produzir falhas intermitentes de USB/NVMe; registrar `/chosen/power` e separar falha elétrica de falha do port.",
+    "A chave CFS ausente, com nome incorreto, par inconsistente ou formato inválido deve interromper o build antes de publicar uma imagem.",
+    "O backend de assinatura RSA pode receber simultaneamente PEM e HSM, nenhum dos dois, chave não RSA ou tamanho diferente de 2048 bits; validar configuração e abortar com mensagem objetiva.",
+    "Um cache sstate compartilhado pode vazar material ou reutilizar saída assinada com a chave errada; tarefas de assinatura e seus diretórios precisam de isolamento e política explícita de cache.",
+    "Rotação da chave raiz RSA do Pi não é possível depois de programar seu digest em OTP; o runbook deve tratar perda/comprometimento dessa chave como evento de ciclo de vida do dispositivo.",
+    "Rotação da chave Ed25519 de rootfs exige que a nova chave pública chegue por uma etapa de boot ainda confiável; testar a transição e documentar se confiança simultânea em chave antiga e nova é ou não suportada.",
+    "Composefs altera a persistência de `/etc`; NetworkManager, hostname, SSH e dados de provisionamento não podem depender de alterações efêmeras não documentadas.",
+    "Queda de energia entre gravação de boot, deployment OSTree e atualização de metadados pode deixar versões desencontradas; validar ordem atômica, fallback e caminho de recuperação.",
+    "Uma imagem adulterada deve falhar de modo observável, e a matriz de teste deve distinguir rejeição pelo firmware, pelo initramfs/composefs e pelo Uptane."
+  ],
+  "output_contract": {
+    "format": "Alterações de código e documentação no workspace, acompanhadas de handoff em Markdown",
+    "sections": [
+      "Resultado",
+      "Arquitetura e cadeia de confiança",
+      "Arquivos alterados",
+      "Build e uso",
+      "Configuração de chaves",
+      "Evidências e testes",
+      "Riscos, limitações e próximos passos"
+    ],
+    "include_explanation": true,
+    "verbosity": "high",
+    "machine_schema": null,
+    "notes": "Entregar arquivos prontos para revisão: camada `meta-*`, configuração kas/repo com revisões fixadas, exemplos sem segredos, scripts de validação/assinatura, runbook de provisionamento irreversível separado, diagrama conciso da cadeia de confiança e matriz de testes. Na resposta final, separar claramente o que foi executado do que depende de hardware ou autorização."
+  },
+  "assumptions": [
+    "O alvo inicial é Raspberry Pi 5 Model B de 64 bits e microSD; CM5, NVMe e eMMC serão variantes parametrizadas.",
+    "A primeira entrega usa Torizon OS 7/Scarthgap por ser a série atual documentada e compartilhada entre Common Torizon e o BSP Raspberry Pi 5.",
+    "U-Boot é o candidato inicial para preservar integração de OSTree/OTA/rollback, mas a implementação só deve adotá-lo após verificar o contrato real de `OSTREE_BOOTLOADER`, scripts de boot e atualização no conjunto de revisões fixado.",
+    "As chaves de produção serão fornecidas por um sistema externo; exemplos locais usarão somente nomes e caminhos fictícios.",
+    "O executor pode construir e fazer verificação estática sem hardware; testes de boot, adulteração e falha de energia devem ser marcados como pendentes quando não houver acesso ao Raspberry Pi 5."
+  ],
+  "blocking_questions": [],
+  "validation_checks": [
+    "Confirmar em fontes oficiais, na revisão efetivamente fixada, cada variável BitBake, nome de artefato e comando de assinatura antes de implementá-lo.",
+    "Executar `bitbake-layers show-layers`, validar compatibilidade Scarthgap e registrar commits exatos de todas as camadas.",
+    "Executar parse e build de `torizon-minimal`; depois executar a variante assinada e `torizon-docker` como gates separados, sem esconder warnings ou falhas relevantes.",
+    "Inspecionar a imagem WIC, a partição FAT e `boot.img`; confirmar `config.txt` não vazio, kernel realmente referenciado, DTB/overlays BCM2712, initramfs, `boot.sig` e ausência de chaves privadas.",
+    "Verificar a assinatura RSA offline com a chave pública usando a ferramenta oficial e registrar fingerprint, algoritmo e tamanho sem expor segredos.",
+    "Validar que o perfil de produção CFS usa `CFS_GENERATE_KEYS = \"0\"`, encontra o par esperado e assina OSTree com Ed25519; adulterar uma cópia para comprovar rejeição.",
+    "Varrer Git, deploy, logs, tmp, sstate e imagem final por nomes, fingerprints de teste e padrões de segredo; corrigir qualquer vazamento encontrado.",
+    "Em hardware, registrar console serial, `ostree admin status`, serviços systemd/Torizon, rede, armazenamento, `/proc/device-tree/chosen/bootloader` e flags de secure boot antes e depois do provisionamento autorizado.",
+    "Executar testes A→B, reboot, rollback, imagem de boot adulterada, commit rootfs adulterado e interrupção de energia conforme a matriz, mantendo evidências reproduzíveis.",
+    "Revisar o diff para garantir que somente a camada de integração, configuração, testes e documentação do port foram alterados e que nenhum segredo ou comando irreversível automático foi introduzido.",
+    "Comparar a entrega final com cada critério de sucesso e declarar de forma explícita qualquer item não comprovado em hardware."
+  ]
+}
