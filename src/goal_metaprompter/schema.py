@@ -3,12 +3,13 @@
 from __future__ import annotations
 
 import re
+import unicodedata
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any
 from urllib.parse import urlparse
 
-from .resources import get_goal_spec_schema
+from .resources import _goal_spec_schema
 
 
 @dataclass(frozen=True)
@@ -36,15 +37,24 @@ def _join_path(path: str, part: str) -> str:
 
 
 def _uri_issue(value: str) -> str | None:
-    if any(character.isspace() or ord(character) < 32 for character in value):
-        return "must not contain whitespace or control characters"
+    if any(
+        character.isspace() or ord(character) < 32 or unicodedata.category(character) == "Cf"
+        for character in value
+    ):
+        return "must not contain whitespace, control, or invisible characters"
     try:
         parsed = urlparse(value)
+    except ValueError:
+        return "is not a parseable URL"
+    try:
         _ = parsed.port
     except ValueError:
         return "must contain a valid port"
     if parsed.scheme not in {"http", "https"} or not parsed.hostname:
         return "must be an absolute http:// or https:// URL with a hostname"
+    if parsed.username is not None or parsed.password is not None:
+        # user@host lets a trusted-looking prefix mask the real hostname.
+        return "must not contain userinfo before the hostname"
     return None
 
 
@@ -133,7 +143,7 @@ def validate_goal_spec_data(
     issues: list[SchemaIssue] = []
     _collect(
         data,
-        get_goal_spec_schema(),
+        _goal_spec_schema(),  # cached instance; _collect never mutates it
         "",
         issues,
         structural_only=structural_only,

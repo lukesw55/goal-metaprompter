@@ -3,11 +3,26 @@
 from __future__ import annotations
 
 from collections.abc import Iterable, Mapping
+from collections.abc import Set as AbstractSet
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, cast
+from typing import Any, Literal, cast
 
+from .resources import _goal_spec_schema
 from .schema import require_goal_spec_structure
+
+# Key sets and bounds are derived from the packaged schema so the JSON
+# contract and the Python-side checks cannot drift apart.
+_SCHEMA_PROPERTIES: Mapping[str, Any] = _goal_spec_schema()["properties"]
+_REFERENCE_REQUIRED: frozenset[str] = frozenset(_SCHEMA_PROPERTIES["references"]["items"]["required"])
+_REFERENCE_OPTIONAL: frozenset[str] = (
+    frozenset(_SCHEMA_PROPERTIES["references"]["items"]["properties"]) - _REFERENCE_REQUIRED
+)
+_CONTRACT_REQUIRED: frozenset[str] = frozenset(_SCHEMA_PROPERTIES["output_contract"]["required"])
+_CONTRACT_OPTIONAL: frozenset[str] = (
+    frozenset(_SCHEMA_PROPERTIES["output_contract"]["properties"]) - _CONTRACT_REQUIRED
+)
+_LANGUAGE_MIN_LENGTH: int = int(_SCHEMA_PROPERTIES["language"].get("minLength", 1))
 
 
 class Target(str, Enum):
@@ -74,10 +89,10 @@ def _check_keys(
     data: Mapping[str, Any],
     *,
     field_name: str,
-    required: set[str],
-    optional: set[str] | None = None,
+    required: AbstractSet[str],
+    optional: AbstractSet[str] | None = None,
 ) -> None:
-    optional = optional or set()
+    optional = optional or frozenset()
     missing = required - set(data)
     if missing:
         raise ValueError(f"{field_name} is missing required keys: {', '.join(sorted(missing))}")
@@ -112,8 +127,8 @@ class Reference:
         _check_keys(
             data,
             field_name="reference",
-            required={"label", "url", "purpose"},
-            optional={"required"},
+            required=_REFERENCE_REQUIRED,
+            optional=_REFERENCE_OPTIONAL,
         )
         return cls(
             label=_string(data.get("label"), "reference.label"),
@@ -166,8 +181,8 @@ class OutputContract:
         _check_keys(
             data,
             field_name="output_contract",
-            required={"format", "sections", "include_explanation", "verbosity"},
-            optional={"machine_schema", "notes"},
+            required=_CONTRACT_REQUIRED,
+            optional=_CONTRACT_OPTIONAL,
         )
         schema = data.get("machine_schema")
         if schema is not None and not isinstance(schema, Mapping):
@@ -217,11 +232,14 @@ class GoalRequest:
             "vague_prompt",
             _string(self.vague_prompt, "vague_prompt", allow_empty=False),
         )
-        object.__setattr__(
-            self,
-            "language",
-            _string(self.language, "language", allow_empty=False),
-        )
+        language = _string(self.language, "language", allow_empty=False)
+        # The packaged schema bounds language length; catching a bare "x" here
+        # avoids emitting a metaprompt whose pinned language can never validate.
+        if len(language) < _LANGUAGE_MIN_LENGTH:
+            raise ValueError(
+                f"language must contain at least {_LANGUAGE_MIN_LENGTH} characters"
+            )
+        object.__setattr__(self, "language", language)
         object.__setattr__(self, "context", _strings(self.context, "context"))
         object.__setattr__(self, "references", _strings(self.references, "references"))
         object.__setattr__(self, "constraints", _strings(self.constraints, "constraints"))
@@ -295,13 +313,7 @@ class GoalSpec:
     version: str = "1.0"
 
     def __post_init__(self) -> None:
-        if isinstance(self.target, Target):
-            target = self.target
-        elif isinstance(self.target, str):
-            target = Target(self.target)
-        else:
-            raise TypeError("target must be a string")
-        object.__setattr__(self, "target", target)
+        object.__setattr__(self, "target", Target.parse(self.target))
         object.__setattr__(self, "version", _string(self.version, "version"))
         object.__setattr__(self, "language", _string(self.language, "language"))
         object.__setattr__(self, "role", _string(self.role, "role"))
@@ -341,7 +353,7 @@ class GoalSpec:
         output_data = cast(Mapping[str, Any], data.get("output_contract"))
         return cls(
             version=_string(data.get("version"), "version"),
-            target=Target(_string(data.get("target"), "target")),
+            target=Target.parse(_string(data.get("target"), "target")),
             language=_string(data.get("language"), "language"),
             role=_string(data.get("role"), "role"),
             goal=_string(data.get("goal"), "goal"),
@@ -391,11 +403,18 @@ class GoalSpec:
         }
 
 
+Severity = Literal["error", "warning"]
+
+
 @dataclass(frozen=True)
 class ValidationIssue:
     field: str
     message: str
-    severity: str = "error"
+    severity: Severity = "error"
+
+    def __post_init__(self) -> None:
+        if self.severity not in ("error", "warning"):
+            raise ValueError("severity must be 'error' or 'warning'")
 
     def to_dict(self) -> dict[str, str]:
         return {"field": self.field, "message": self.message, "severity": self.severity}
@@ -416,6 +435,10 @@ class ValidationReport:
     @property
     def valid(self) -> bool:
         return not self.errors
+
+    def __bool__(self) -> bool:
+        """True when the report has no errors (warnings are allowed)."""
+        return self.valid
 
     def raise_for_errors(self) -> None:
         if self.errors:

@@ -1,6 +1,7 @@
 # Instruções críticas
 
 - Atue como Especialista de teste.
+- Responda em pt-BR.
 - Use apenas fatos e fontes identificados abaixo; não invente URLs nem requisitos.
 - Planeje e valide internamente. Não exponha chain-of-thought; apresente somente resultado, evidências, decisões relevantes e limitações.
 - Respeite todas as restrições e o contrato de saída.
@@ -47,7 +48,7 @@ Entregar X.
 
 ## Política de esclarecimento
 
-- Não há perguntas bloqueantes registradas. Faça hipóteses reversíveis já declaradas e avance.
+- Não há perguntas bloqueantes. Prossiga com base nas hipóteses declaradas; registre qualquer nova hipótese no relato final.
 
 # Formato de saída
 

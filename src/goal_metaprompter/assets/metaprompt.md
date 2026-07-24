@@ -28,7 +28,16 @@ Cada restrição deve prevenir um risco real e cada caso de borda deve implicar 
 
 {{GOAL_SPEC_SHAPE}}
 
-Use exatamente essas chaves. Arrays sem itens aplicáveis devem ser vazios, exceto success_criteria, constraints, edge_cases e validation_checks, que exigem pelo menos um item. target deve ser exatamente {{TARGET_JSON}} e language deve ser {{LANGUAGE_JSON}}.
+Use exatamente essas chaves. Os valores mostrados acima descrevem o conteúdo esperado; são placeholders, não valores literais — substitua todos por conteúdo real.
+
+Regras de valor:
+
+- target deve ser exatamente {{TARGET_JSON}} e language deve ser {{LANGUAGE_JSON}}.
+- Arrays sem itens aplicáveis devem ser vazios, exceto success_criteria, constraints, edge_cases e validation_checks, que exigem pelo menos um item.
+- output_contract.verbosity deve ser exatamente um de: "low", "medium" ou "high".
+- machine_schema é um JSON Schema apenas quando a saída for consumida por máquina; caso contrário, null.
+- Todo valor de string deve ser de linha única, sem quebras de linha ou caracteres de controle.
+- Escreva todos os valores textuais (role, goal, critérios, restrições etc.) no idioma {{LANGUAGE_JSON}}; mantenha nomes de arquivos, comandos, identificadores e URLs em sua forma literal.
 
 <source_request encoding="xml-escaped-json">
 {{SOURCE_REQUEST}}

@@ -1,0 +1,63 @@
+{
+  "version": "1.0",
+  "target": "codex",
+  "language": "en-US",
+  "role": "Senior data engineer",
+  "goal": "Export the <daily> report & publish it to the \"metrics\" bucket.",
+  "success_criteria": [
+    "The report is exported with every required field.",
+    "Publishing the same report twice is idempotent."
+  ],
+  "context": [
+    "The pipeline runs on a nightly schedule."
+  ],
+  "inputs": [
+    "CSV dump at C:\\data\\daily.csv."
+  ],
+  "references": [
+    {
+      "label": "Metrics guide [internal] (v2)",
+      "url": "https://wiki.example.com/metrics",
+      "purpose": "Field definitions.",
+      "required": true
+    },
+    {
+      "label": "Bucket docs",
+      "url": "https://docs.example.com/buckets",
+      "purpose": "Publishing API.",
+      "required": false
+    }
+  ],
+  "constraints": [
+    "Do not change the bucket layout."
+  ],
+  "non_goals": [
+    "Redesigning the report."
+  ],
+  "edge_cases": [
+    "An empty CSV produces an explicit error."
+  ],
+  "output_contract": {
+    "format": "Markdown",
+    "sections": ["Result", "Files changed"],
+    "include_explanation": true,
+    "verbosity": "medium",
+    "machine_schema": {
+      "type": "object",
+      "required": ["status"],
+      "properties": {
+        "status": { "type": "string" }
+      }
+    },
+    "notes": "Start with the result; avoid `generic` intros."
+  },
+  "assumptions": [
+    "The bucket already exists."
+  ],
+  "blocking_questions": [
+    "Which timezone should the report use?"
+  ],
+  "validation_checks": [
+    "Run the export twice and compare the outputs."
+  ]
+}

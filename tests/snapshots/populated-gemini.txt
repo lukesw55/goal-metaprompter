@@ -1,0 +1,85 @@
+# Critical instructions
+
+- Act as Senior data engineer.
+- Respond in en-US.
+- Use only the facts and sources identified below; do not invent URLs or requirements.
+- Plan and validate internally. Do not expose chain-of-thought; present only the result, evidence, relevant decisions, and limitations.
+- Respect every constraint and the output contract.
+
+# Unified context
+
+## Facts and dependencies
+
+- The pipeline runs on a nightly schedule.
+
+## Inputs and modalities
+
+- CSV dump at C:\data\daily.csv.
+
+## Sources of truth
+
+- Metrics guide [internal] (v2) (required): https://wiki.example.com/metrics — Field definitions.
+- Bucket docs (optional): https://docs.example.com/buckets — Publishing API.
+
+## Declared assumptions
+
+- The bucket already exists.
+
+# Limits
+
+## Constraints
+
+- Do not change the bucket layout.
+
+## Out of scope
+
+- Redesigning the report.
+
+## Edge cases
+
+- An empty CSV produces an explicit error.
+
+# Task
+
+Export the <daily> report & publish it to the "metrics" bucket.
+
+## Success criteria
+
+- The report is exported with every required field.
+- Publishing the same report twice is idempotent.
+
+## Clarification policy
+
+Before making material changes, obtain answers only to these questions:
+- Which timezone should the report use?
+
+If answers cannot be obtained in this environment, stop before material changes and deliver only: the questions, the analysis performed, and the options with trade-offs.
+
+# Output format
+
+- Required response language: en-US
+- Format: Markdown
+- Verbosity: medium
+- Explanations: include
+- Sections: Result, Files changed
+- Machine schema:
+```json
+{
+  "type": "object",
+  "required": [
+    "status"
+  ],
+  "properties": {
+    "status": {
+      "type": "string"
+    }
+  }
+}
+```
+- Notes: Start with the result; avoid `generic` intros.
+
+# Verification before answering
+
+- Run the export twice and compare the outputs.
+- Compare the result with every applicable success criterion, constraint, and edge case.
+- Silently fix any violations found before answering.

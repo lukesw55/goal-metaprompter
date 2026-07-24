@@ -1,6 +1,6 @@
 """Public API for Goal Metaprompter."""
 
-from .core import build_metaprompt, render_goal_prompt, validate_spec
+from .core import build_metaprompt, render_goal_prompt, validate_goal_spec, validate_spec
 from .models import (
     GoalRequest,
     GoalSpec,
@@ -26,6 +26,7 @@ __all__ = [
     "get_goal_spec_schema",
     "get_metaprompt_template",
     "render_goal_prompt",
+    "validate_goal_spec",
     "validate_goal_spec_data",
     "validate_spec",
 ]

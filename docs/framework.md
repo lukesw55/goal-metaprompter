@@ -63,7 +63,6 @@ Cada caso incluído precisa se converter em tratamento, teste, mensagem ou limit
 - Coloque documentos longos antes da tarefa e preserve metadados de origem.
 - Defina política de ferramentas e limites de ação de forma explícita.
 - Solicite análise e planejamento internos; peça na resposta somente decisões, evidências e resultado.
-- Quando exemplos realmente reduzirem ambiguidade, use blocos `<example>` consistentes.
 
 ### Codex
 
@@ -104,7 +103,7 @@ Um `GoalSpec` só está pronto quando:
 
 - os cinco pilares estão preenchidos;
 - o objetivo descreve um resultado único e acionável;
-- existe pelo menos um critério de sucesso e uma verificação final;
+- existe pelo menos um critério de sucesso, uma restrição, um caso de borda e uma verificação final;
 - todas as referências são URLs absolutas;
 - casos de borda têm relação com o domínio;
 - hipóteses não aparecem como fatos;

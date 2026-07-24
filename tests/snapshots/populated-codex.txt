@@ -1,0 +1,86 @@
+# Goal
+
+Export the <daily> report & publish it to the "metrics" bucket.
+
+## Role
+
+Senior data engineer
+
+## Workspace context
+
+- The pipeline runs on a nightly schedule.
+
+## Inputs
+
+- CSV dump at C:\data\daily.csv.
+
+## Sources of truth
+
+- Metrics guide [internal] (v2) (required): https://wiki.example.com/metrics — Field definitions.
+- Bucket docs (optional): https://docs.example.com/buckets — Publishing API.
+
+## Success criteria
+
+- The report is exported with every required field.
+- Publishing the same report twice is idempotent.
+
+## Constraints
+
+- Do not change the bucket layout.
+- Inspect the workspace and any applicable instructions first. Preserve existing, unrelated changes.
+- Use the complete paths and URLs provided; do not invent missing references.
+- Make bounded, verifiable changes. Avoid refactors or dependencies outside the goal.
+
+## Out of scope
+
+- Redesigning the report.
+
+## Edge cases
+
+- An empty CSV produces an explicit error.
+
+## Declared assumptions
+
+- The bucket already exists.
+
+## Clarification policy
+
+Before making material changes, obtain answers only to these questions:
+- Which timezone should the report use?
+
+If answers cannot be obtained in this environment, stop before material changes and deliver only: the questions, the analysis performed, and the options with trade-offs.
+
+## Deliverable
+
+- Required response language: en-US
+- Format: Markdown
+- Verbosity: medium
+- Explanations: include
+- Sections: Result, Files changed
+- Machine schema:
+```json
+{
+  "type": "object",
+  "required": [
+    "status"
+  ],
+  "properties": {
+    "status": {
+      "type": "string"
+    }
+  }
+}
+```
+- Notes: Start with the result; avoid `generic` intros.
+
+## Final validation
+
+Plan internally, execute, and silently correct any violations found. Do not expose chain-of-thought. Before finishing:
+
+- Run the export twice and compare the outputs.
+- Compare the result with every success criterion and constraint.
+- Run checks proportional to the risk and report relevant commands/results.
+
+In the user handoff, start with the result. For Codex, keep the report concise and include only changed files/artifacts, checks executed, and real limitations.
+
+If the blocking questions prevent execution, the handoff must start with the questions and the state of the analysis, with no material changes.

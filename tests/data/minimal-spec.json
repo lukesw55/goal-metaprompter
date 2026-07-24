@@ -1,0 +1,25 @@
+{
+  "version": "1.0",
+  "target": "codex",
+  "language": "pt-BR",
+  "role": "Especialista de teste",
+  "goal": "Entregar X.",
+  "success_criteria": ["X entregue."],
+  "context": [],
+  "inputs": [],
+  "references": [],
+  "constraints": ["Não alterar Y."],
+  "non_goals": [],
+  "edge_cases": ["Entrada vazia gera erro."],
+  "output_contract": {
+    "format": "Markdown",
+    "sections": ["Resultado"],
+    "include_explanation": false,
+    "verbosity": "low",
+    "machine_schema": null,
+    "notes": ""
+  },
+  "assumptions": [],
+  "blocking_questions": [],
+  "validation_checks": ["Confirmar X."]
+}

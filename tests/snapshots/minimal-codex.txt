@@ -43,7 +43,7 @@ Especialista de teste
 
 ## Política de esclarecimento
 
-- Não há perguntas bloqueantes registradas. Faça hipóteses reversíveis já declaradas e avance.
+- Não há perguntas bloqueantes. Prossiga com base nas hipóteses declaradas; registre qualquer nova hipótese no relato final.
 
 ## Entregável
 

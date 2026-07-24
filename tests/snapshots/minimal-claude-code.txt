@@ -3,8 +3,8 @@
 <response_language>pt-BR</response_language>
 
 <context>
-<facts>None specified.</facts>
-<inputs>None specified.</inputs>
+<facts none="true" />
+<inputs none="true" />
 <references>
   <reference>None provided. Do not invent a source.</reference>
 </references>
@@ -13,7 +13,7 @@
 <goal>Entregar X.</goal>
 
 <success_criteria>
-  <item>X entregue.</item>
+  <criterion>X entregue.</criterion>
 </success_criteria>
 
 <instructions>
@@ -26,32 +26,29 @@
 <constraints>
   <constraint>Não alterar Y.</constraint>
 </constraints>
-<non_goals>None specified.</non_goals>
+<non_goals none="true" />
 <edge_cases>
   <edge_case>Entrada vazia gera erro.</edge_case>
 </edge_cases>
-<assumptions>None specified.</assumptions>
+<assumptions none="true" />
 
 <clarification_policy>
   <rule>No blocking questions are registered. Proceed using the declared reversible assumptions.</rule>
-<blocking_questions>None specified.</blocking_questions>
 </clarification_policy>
 
-<output_contract>{
-  &quot;format&quot;: &quot;Markdown&quot;,
-  &quot;sections&quot;: [
-    &quot;Resultado&quot;
-  ],
-  &quot;include_explanation&quot;: false,
-  &quot;verbosity&quot;: &quot;low&quot;,
-  &quot;machine_schema&quot;: null,
-  &quot;notes&quot;: &quot;&quot;
-}</output_contract>
+<output_contract>
+  <format>Markdown</format>
+  <sections>
+    <section>Resultado</section>
+  </sections>
+  <include_explanation>false</include_explanation>
+  <verbosity>low</verbosity>
+</output_contract>
 
 <final_validation>
 <checks>
   <check>Confirmar X.</check>
-</checks>
   <check>Compare the result with every success criterion and constraint.</check>
   <check>Correct detected violations before returning the final answer.</check>
+</checks>
 </final_validation>

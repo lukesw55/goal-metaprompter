@@ -86,7 +86,7 @@ from goal_metaprompter import (
     build_metaprompt,
     get_goal_spec_schema,
     render_goal_prompt,
-    validate_spec,
+    validate_goal_spec,
 )
 
 request = GoalRequest(
@@ -101,10 +101,14 @@ schema = get_goal_spec_schema()
 
 # Envie meta_prompt ao provedor e solicite JSON estruturado com `schema`.
 provider_response = call_your_llm(meta_prompt)
-spec = GoalSpec.from_dict(json.loads(provider_response))
+data = json.loads(provider_response)
 
-report = validate_spec(spec)
+# validate_goal_spec nunca lança para payloads malformados: devolve um
+# relatório completo com erros estruturais, violações de valor e avisos.
+report = validate_goal_spec(data)
 report.raise_for_errors()
+
+spec = GoalSpec.from_dict(data)
 final_prompt = render_goal_prompt(spec)
 ```
 
@@ -120,6 +124,8 @@ Em produção, use o recurso nativo de **structured output / JSON Schema** do pr
 | Gemini | Markdown hierárquico | contexto unificado, inventário multimodal, instruções críticas e saída estruturada |
 
 O framework pede planejamento e autocorreção **internos**, mas não exige que o modelo exponha raciocínio privado. O resultado deve mostrar decisões, evidências, testes e limitações — não uma transcrição de chain-of-thought.
+
+O scaffolding dos prompts em Markdown (títulos e instruções fixas) acompanha o idioma do `GoalSpec`: português para `pt-*`, inglês para os demais idiomas. O render de Claude Code usa scaffolding em inglês com a tag `<response_language>` explícita.
 
 ## Princípios de segurança e qualidade
 
@@ -139,13 +145,22 @@ As decisões do framework seguem as orientações oficiais atuais:
 - [OpenAI — Prompting](https://learn.chatgpt.com/docs/prompting.md): objetivo, contexto, saída, limites e verificação final.
 - [Anthropic — Prompting best practices](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices): clareza, papéis, exemplos e tags XML para prompts complexos.
 - [Google — Prompt design strategies](https://ai.google.dev/gemini-api/docs/prompting-strategies): instruções específicas, contexto longo, exemplos consistentes e saída estruturada.
-- [Cursor — Rules](https://docs.cursor.com/context/rules-for-ai): regras persistentes e contexto de projeto para o agente.
+- [Cursor — Rules](https://cursor.com/docs/context/rules): regras persistentes e contexto de projeto para o agente.
 
 ## Verificação local
 
+As ferramentas de qualidade ficam no extra `dev`:
+
 ```powershell
+python -m pip install -e ".[dev]"
 python -m unittest discover -s tests -v
 ruff check .
 mypy src
 python -m build
+```
+
+Após uma mudança intencional nos renderizadores, regenere os snapshots e revise o diff:
+
+```powershell
+python tests/update_snapshots.py
 ```

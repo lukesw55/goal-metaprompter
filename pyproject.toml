@@ -1,18 +1,41 @@
 [build-system]
-requires = ["setuptools>=68"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "goal-metaprompter"
-version = "0.2.0"
+dynamic = ["version"]
 description = "Framework deterministico para normalizar e renderizar prompts Goal-Oriented por LLM de destino."
 readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.10"
 dependencies = []
+authors = [{ name = "Lucas Lungareze" }]
+keywords = ["prompt-engineering", "llm", "metaprompt", "goal-oriented", "cli"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Environment :: Console",
+  "Intended Audience :: Developers",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Topic :: Software Development :: Code Generators",
+  "Typing :: Typed",
+]
+
+[project.urls]
+Repository = "https://github.com/lukesw55/goal-metaprompter"
+Issues = "https://github.com/lukesw55/goal-metaprompter/issues"
 
 [project.optional-dependencies]
 dev = [
   "build>=1.2",
+  "coverage>=7.6",
   "mypy>=1.11",
   "ruff>=0.9",
 ]
@@ -20,10 +43,14 @@ dev = [
 [project.scripts]
 goal-metaprompter = "goal_metaprompter.cli:main"
 
+[tool.setuptools.dynamic]
+version = { attr = "goal_metaprompter.__version__" }
+
 [tool.setuptools.packages.find]
 where = ["src"]
 
 [tool.setuptools.package-data]
+"goal_metaprompter" = ["py.typed"]
 "goal_metaprompter.assets" = ["*.json", "*.md"]
 
 [tool.ruff]
@@ -38,3 +65,9 @@ ignore = ["E501"]
 python_version = "3.10"
 strict = true
 files = ["src"]
+
+[tool.coverage.run]
+source = ["goal_metaprompter"]
+
+[tool.coverage.report]
+show_missing = true
