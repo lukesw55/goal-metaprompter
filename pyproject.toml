@@ -11,7 +11,7 @@ license = "MIT"
 license-files = ["LICENSE"]
 requires-python = ">=3.10"
 dependencies = []
-authors = [{ name = "Lucas Lungareze" }]
+authors = [{ name = "lukesw55" }]
 keywords = ["prompt-engineering", "llm", "metaprompt", "goal-oriented", "cli"]
 classifiers = [
   "Development Status :: 4 - Beta",
